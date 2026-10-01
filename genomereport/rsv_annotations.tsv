@@ -1,0 +1,23 @@
+Proteina	NCBI_Accession	UniProt_Accession	Longitud_aa	Rango_aa	Dominio_Region	Funcion_o_Diana_Farmaco
+Proteina G (Fijacion)	YP_009513243.1	P03423	298	1-37	Cola citoplasmatica y senal	Anclaje inicial a la membrana.
+Proteina G (Fijacion)	YP_009513243.1	P03423	298	38-66	Dominio Transmembrana (TMD)	Interaccion hidrofobica celular.
+Proteina G (Fijacion)	YP_009513243.1	P03423	298	67-149	Region Hipervariable 1 (HVR1)	Evasion inmune variable.
+Proteina G (Fijacion)	YP_009513243.1	P03423	298	151-190	Region Central Conservada (CCD)	Esencial para la viabilidad viral.
+Proteina G (Fijacion)	YP_009513243.1	P03423	298	182-186	Motivo de lazo CX3C	Union al receptor de la celula.
+Proteina G (Fijacion)	YP_009513243.1	P03423	298	191-298	Region Hipervariable 2 (HVR2)	Aloja duplicaciones estructurales (BA/ON1).
+Proteina F (Fusion)	YP_009513244.1	P03420	574	1-25	Peptido senal	Se elimina en la maduracion.
+Proteina F (Fusion)	YP_009513244.1	P03420	574	26-109	Subunidad F2	Cabeza globular exterior.
+Proteina F (Fusion)	YP_009513244.1	P03420	574	110-136	Peptido de activacion (Pep27)	Escindido por la furina celular.
+Proteina F (Fusion)	YP_009513244.1	P03420	574	137-574	Subunidad F1	Contiene la maquinaria de fusion.
+Proteina F (Fusion)	YP_009513244.1	P03420	574	137-154	Peptido de fusion h.	Insercion en membrana diana.
+Proteina F (Fusion)	YP_009513244.1	P03420	574	62-69; 196-212	Sitio Antigenico O (Prefusion)	Diana de Nirsevimab (N208D).
+Proteina F (Fusion)	YP_009513244.1	P03420	574	250-277	Sitio Antigenico II	Diana de Palivizumab (K272, S275).
+Proteina F (Fusion)	YP_009513244.1	P03420	574	422-468	Sitio Antigenico IV (HR2)	Diana de Clesrovimab (T444).
+Proteina F (Fusion)	YP_009513244.1	P03420	574	469-500	Cavidad Interna Trimero	Diana de Ziresovir (D489).
+Proteina F (Fusion)	YP_009513244.1	P03420	574	525-548	Dominio Transmembrana (TMD)	Anclaje a la membrana viral.
+Proteina L (Polimerasa)	YP_009513246.1	P03425	2165	1-550	Dominio N-terminal	Union al ARN/polimerizacion inicial.
+Proteina L (Polimerasa)	YP_009513246.1	P03425	2165	551-1100	Dominio RdRp	ARN polimerasa catalitica.
+Proteina L (Polimerasa)	YP_009513246.1	P03425	2165	810-813	Motivo C catalitico	Triplete conservado GDNQ.
+Proteina L (Polimerasa)	YP_009513246.1	P03425	2165	1101-1450	Dominio de Capping	Adicion de caperuza al ARNm.
+Proteina L (Polimerasa)	YP_009513246.1	P03425	2165	1200-1250	Sitio de Resistencia	Diana de Lumicitabina (M1217, N1224).
+Proteina L (Polimerasa)	YP_009513246.1	P03425	2165	1600-1900	Dominio Metiltransferasa (MTasa)	Metilacion y estabilidad del ARNm.

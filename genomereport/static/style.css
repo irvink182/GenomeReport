@@ -1,0 +1,1208 @@
+/* ==========================================================================
+   GenomeReport
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   Global
+   -------------------------------------------------------------------------- */
+
+:root {
+    --color-primary: #1a3c5a;
+    --color-primary-light: #edf3f7;
+
+    --color-text: #252525;
+    --color-text-muted: #6c757d;
+
+    --color-background: #f5f7f9;
+    --color-surface: #ffffff;
+
+    --color-border: #dfe3e6;
+
+    --color-rsv-a: #2c7fb8;
+    --color-rsv-b: #1b9e77;
+
+    --border-radius: 8px;
+
+    --shadow:
+        0 2px 8px rgba(0, 0, 0, 0.06);
+
+    --content-width: 1400px;
+}
+
+
+* {
+    box-sizing: border-box;
+}
+
+
+html {
+    scroll-behavior: smooth;
+}
+
+
+body {
+    margin: 0;
+
+    background-color: var(--color-background);
+
+    color: var(--color-text);
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+
+/* --------------------------------------------------------------------------
+   Main report container
+   -------------------------------------------------------------------------- */
+
+.report-container {
+    width: min(
+        calc(100% - 48px),
+        var(--content-width)
+    );
+
+    margin: 32px auto;
+
+    background-color: var(--color-surface);
+
+    border-radius: var(--border-radius);
+
+    box-shadow: var(--shadow);
+
+    overflow: hidden;
+}
+
+
+/* --------------------------------------------------------------------------
+   Header
+   -------------------------------------------------------------------------- */
+
+.report-header {
+    padding: 54px 56px 42px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: var(--border-radius);
+}
+
+.report-brand {
+    margin-bottom: 22px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    opacity: 0.85;
+}
+
+.report-header h1 {
+    margin: 0;
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.report-subtitle {
+    margin: 10px 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 1.5rem;
+    line-height: 1.5;
+}
+
+.report-metadata {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 32px;
+
+    margin-top: 34px;
+    padding-top: 20px;
+
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.report-metadata-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.report-metadata-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.report-metadata-value {
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+
+/* --------------------------------------------------------------------------
+   Sections
+   -------------------------------------------------------------------------- */
+
+.report-section {
+    padding: 40px 56px;
+    border-bottom:
+        1px solid var(--color-border);
+}
+
+
+.report-section:last-child {
+    border-bottom: none;
+}
+
+
+.report-section h2 {
+    margin:
+        0
+        0
+        8px;
+    color: var(--color-primary);
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+
+.section-description {
+    max-width: 900px;
+    margin:
+        0
+        0
+        28px;
+    color: var(--color-text-muted);
+    font-size: 1.8rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Subsections
+   -------------------------------------------------------------------------- */
+
+.report-subsection {
+    margin-top: 36px;
+}
+
+
+.report-subsection h3 {
+    margin:
+        0
+        0
+        16px;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.subsection-description {
+    margin: 8px 0 20px;
+    color: var(--color-text-muted);
+    font-size: 1.2rem;
+    line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
+   Summary metrics
+   -------------------------------------------------------------------------- */
+
+.metric-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(180px, 1fr)
+        );
+    gap: 16px;
+    margin: 24px 0;
+}
+
+
+.metric-card {
+    padding: 20px 22px;
+    background-color: var(--color-surface);
+    border:
+        1px solid var(--color-border);
+    border-radius: var(--border-radius);
+}
+
+
+.metric-value {
+    display: block;
+    color: var(--color-primary);
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+
+.metric-label {
+    display: block;
+    margin-top: 6px;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+
+/* RSV subtype cards */
+
+.metric-card.rsv-a {
+    border-top:
+        4px solid var(--color-rsv-a);
+}
+
+
+.metric-card.rsv-b {
+    border-top:
+        4px solid var(--color-rsv-b);
+}
+
+
+/* --------------------------------------------------------------------------
+   Report text
+   -------------------------------------------------------------------------- */
+
+.report-text {
+    margin: 16px 0 20px;
+}
+
+.report-text p {
+    margin: 0;
+    color: var(--color-text);
+    font-size: 1.05rem;
+    line-height: 1.65;
+}
+
+/* --------------------------------------------------------------------------
+   Figures
+   -------------------------------------------------------------------------- */
+
+.figure-container {
+    margin-top: 26px;
+    margin-bottom: 26px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+.figure-container img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+.figure-caption {
+    margin-top: 10px;
+    max-width: 900px;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.4;
+    text-align: left;
+}
+
+
+/* --------------------------------------------------------------------------
+   Two-column layout
+   -------------------------------------------------------------------------- */
+
+.two-column {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+    gap: 28px;
+    align-items: start;
+}
+
+
+/* --------------------------------------------------------------------------
+   Tables
+   -------------------------------------------------------------------------- */
+
+.table-container {
+    width: 100%;
+    margin: 24px 0;
+    overflow-x: auto;
+    border:
+        1px solid var(--color-border);
+    border-radius: var(--border-radius);
+}
+
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+
+.report-table th,
+.report-table td {
+    padding: 10px 14px;
+    border-bottom:
+        1px solid var(--color-border);
+    text-align: left;
+}
+
+
+.report-table th {
+    background-color:
+        var(--color-primary-light);
+    color:
+        var(--color-primary);
+    font-weight: 600;
+}
+
+
+.report-table tr:last-child td {
+    border-bottom: none;
+}
+
+
+.report-table tbody tr:hover {
+    background-color: #fafbfc;
+}
+
+
+/* --------------------------------------------------------------------------
+   Notes
+   -------------------------------------------------------------------------- */
+
+.report-note {
+    margin: 24px 0;
+    padding: 14px 18px;
+    background-color:
+        var(--color-primary-light);
+    border-left:
+        4px solid var(--color-primary);
+    border-radius:
+        0
+        var(--border-radius)
+        var(--border-radius)
+        0;
+    font-size: 0.92rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Footer
+   -------------------------------------------------------------------------- */
+
+.report-footer {
+    padding: 24px 56px;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   Report footer
+   -------------------------------------------------------------------------- */
+
+.report-footer {
+    margin-top: 48px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background: var(--color-surface);
+    overflow: hidden;
+}
+
+.analysis-information {
+    padding: 22px 28px 24px;
+}
+
+.analysis-information h2 {
+    margin: 0 0 20px;
+    color: var(--color-primary);
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.analysis-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 48px;
+}
+
+.analysis-column h3 {
+    margin: 0 0 12px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.analysis-info-grid {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 7px 20px;
+    font-size: 0.84rem;
+    line-height: 1.5;
+}
+
+.analysis-info-label {
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+
+.report-attribution {
+    padding: 12px 28px;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-primary-light);
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.report-attribution a {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.report-attribution a:hover {
+    text-decoration: underline;
+}
+
+.footer-separator {
+    margin: 0 7px;
+    opacity: 0.6;
+}
+
+/* --------------------------------------------------------------------------
+   Figure grids
+   -------------------------------------------------------------------------- */
+
+.figure-grid {
+    display: grid;
+    gap: 24px;
+    align-items: start;
+}
+
+.figure-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.figure-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.figure-grid .figure-container {
+    margin: 0;
+}
+
+.figure-grid .figure-container img {
+    width: 100%;
+    height: auto;
+}
+
+/* --------------------------------------------------------------------------
+   Patient age summary
+   -------------------------------------------------------------------------- */
+
+.patient-age-summary {
+    margin-top: 28px;
+}
+
+.patient-age-summary h4 {
+    margin:
+        0
+        0
+        12px;
+    color: var(--color-primary);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.age-summary-grid {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.age-summary-grid .secondary-metric:nth-child(4) {
+    border-right: none;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive layout
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+
+    .report-container {
+        width: 100%;
+        margin: 0;
+        border-radius: 0;
+    }
+
+    .report-header {
+        padding: 36px 28px;
+    }
+
+    .report-metadata {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+    
+    .report-section {
+        padding:
+            32px
+            24px;
+    }
+
+    .secondary-metric-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .secondary-metric-grid.age-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .secondary-metric:nth-child(3) {
+        border-right: none;
+    }
+
+    .secondary-metric:nth-child(-n+3) {
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .completeness-row {
+        grid-template-columns: 140px 1fr 55px;
+        gap: 10px;
+    }
+
+    .two-column {
+        grid-template-columns: 1fr;
+    }
+
+    .table-controls,
+    .table-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .table-search input {
+        width: 100%;
+    }
+
+    .table-pagination {
+        flex-wrap: wrap;
+    }
+
+    .figure-modal {
+        padding: 16px;
+    }
+
+    .figure-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .age-summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .age-summary-grid .secondary-metric {
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .age-summary-grid .secondary-metric:nth-child(2n) {
+        border-right: none;
+    }
+
+    .age-summary-grid .secondary-metric:nth-last-child(-n+2) {
+        border-bottom: none;
+    }
+
+    .analysis-info-grid {
+        grid-template-columns: 1fr;
+        gap: 3px;
+    }
+
+    .analysis-info-grid .analysis-info-label:not(:first-child) {
+        margin-top: 10px;
+    }
+
+    .report-attribution {
+        line-height: 1.7;
+    }
+
+    .analysis-columns {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .analysis-info-grid {
+        grid-template-columns: max-content 1fr;
+    }
+
+}
+
+/* --------------------------------------------------------------------------
+   Secondary dataset metrics
+   -------------------------------------------------------------------------- */
+
+.dataset-characteristics {
+    margin-top: 28px;
+}
+
+.dataset-characteristics h3 {
+    margin-bottom: 16px;
+}
+
+.secondary-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    background-color: #fafbfc;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.secondary-metric-grid.age-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.secondary-metric {
+    padding: 18px 14px;
+    text-align: center;
+    border-right: 1px solid var(--color-border);
+}
+
+.secondary-metric:last-child {
+    border-right: none;
+}
+
+.secondary-metric-value {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--color-primary);
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.secondary-metric-label {
+    display: block;
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    line-height: 1.3;
+}
+
+/* --------------------------------------------------------------------------
+   Dataset detail (sequence length values)
+   -------------------------------------------------------------------------- */
+
+.dataset-detail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.dataset-detail-label {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.dataset-detail-value {
+    font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   Completness metadata style
+   -------------------------------------------------------------------------- */
+
+.completeness-container {
+    padding: 20px;
+    background-color: #fafbfc;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+}
+
+.completeness-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 60px;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 10px;
+}
+
+.completeness-row:last-child {
+    margin-bottom: 0;
+}
+
+.completeness-variable {
+    color: var(--color-text);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.completeness-bar {
+    height: 10px;
+    overflow: hidden;
+    background-color: #e7eaed;
+    border-radius: 5px;
+}
+
+.completeness-fill {
+    height: 100%;
+    background-color: var(--color-primary);
+    border-radius: 5px;
+}
+
+.completeness-value {
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+/* --------------------------------------------------------------------------
+   Collapsible tables
+   -------------------------------------------------------------------------- */
+
+.collapsible-table {
+    margin-top: 14px;
+}
+
+.collapsible-table summary {
+    list-style: none;
+}
+
+.collapsible-table summary::-webkit-details-marker {
+    display: none;
+}
+.collapsible-table summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    list-style: none;
+    color: var(--color-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+}
+
+.collapsible-table summary:hover {
+    text-decoration: underline;
+}
+
+.collapsible-table summary::before {
+    content: "▸";
+    font-size: 0.8rem;
+    transition: transform 0.15s ease;
+}
+
+.collapsible-table[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.collapsible-table-content {
+    margin-top: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   Interactive tables
+   -------------------------------------------------------------------------- */
+
+.table-controls {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+
+    padding: 14px 16px;
+
+    background-color: #fafbfc;
+
+    border-bottom:
+        1px solid var(--color-border);
+}
+
+
+.table-search label,
+.table-page-size label {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    color: var(--color-text-muted);
+
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+
+.table-search input {
+    width: 260px;
+
+    padding: 7px 10px;
+
+    background-color: white;
+
+    border:
+        1px solid var(--color-border);
+
+    border-radius: 5px;
+
+    color: var(--color-text);
+
+    font: inherit;
+    font-size: 0.9rem;
+}
+
+
+.table-search input:focus {
+    outline: none;
+
+    border-color: var(--color-primary);
+
+    box-shadow:
+        0 0 0 2px
+        rgba(26, 60, 90, 0.10);
+}
+
+
+.table-page-size select {
+    padding: 6px 28px 6px 8px;
+
+    background-color: white;
+
+    border:
+        1px solid var(--color-border);
+
+    border-radius: 5px;
+
+    color: var(--color-text);
+
+    font: inherit;
+    font-size: 0.9rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Sortable columns
+   -------------------------------------------------------------------------- */
+
+.report-table th.sortable {
+    position: relative;
+
+    padding-right: 28px;
+
+    cursor: pointer;
+
+    user-select: none;
+}
+
+
+.report-table th.sortable::after {
+    content: "↕";
+
+    position: absolute;
+
+    right: 10px;
+
+    color: var(--color-text-muted);
+
+    font-size: 0.8rem;
+
+    opacity: 0.45;
+}
+
+
+.report-table th.sort-asc::after {
+    content: "↑";
+
+    color: var(--color-primary);
+
+    opacity: 1;
+}
+
+
+.report-table th.sort-desc::after {
+    content: "↓";
+
+    color: var(--color-primary);
+
+    opacity: 1;
+}
+
+
+.report-table th.sortable:focus {
+    outline:
+        2px solid var(--color-primary);
+
+    outline-offset: -2px;
+}
+
+
+/* --------------------------------------------------------------------------
+   Table footer
+   -------------------------------------------------------------------------- */
+
+.table-footer {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+
+    padding: 12px 16px;
+
+    background-color: #fafbfc;
+
+    border-top:
+        1px solid var(--color-border);
+}
+
+
+.table-info {
+    color: var(--color-text-muted);
+
+    font-size: 0.82rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Pagination
+   -------------------------------------------------------------------------- */
+
+.table-pagination {
+    display: flex;
+
+    align-items: center;
+
+    gap: 4px;
+}
+
+
+.table-pagination button {
+    min-width: 34px;
+    height: 32px;
+
+    padding: 0 9px;
+
+    background-color: white;
+
+    border:
+        1px solid var(--color-border);
+
+    border-radius: 5px;
+
+    color: var(--color-text);
+
+    font: inherit;
+    font-size: 0.82rem;
+
+    cursor: pointer;
+}
+
+
+.table-pagination button:hover:not(:disabled) {
+    background-color:
+        var(--color-primary-light);
+
+    border-color:
+        var(--color-primary);
+}
+
+
+.table-pagination button.active {
+    background-color:
+        var(--color-primary);
+
+    border-color:
+        var(--color-primary);
+
+    color: white;
+
+    font-weight: 600;
+}
+
+
+.table-pagination button:disabled {
+    cursor: default;
+
+    opacity: 0.4;
+}
+
+
+.pagination-ellipsis {
+    padding: 0 4px;
+
+    color: var(--color-text-muted);
+}
+
+
+/* --------------------------------------------------------------------------
+   Expandable figures
+   -------------------------------------------------------------------------- */
+
+.expandable-figure {
+    cursor: zoom-in;
+
+    transition:
+        opacity 0.15s ease;
+}
+
+
+.expandable-figure:hover {
+    opacity: 0.92;
+}
+
+
+.expandable-figure:focus {
+    outline:
+        2px solid var(--color-primary);
+
+    outline-offset: 4px;
+}
+
+
+/* --------------------------------------------------------------------------
+   Figure modal
+   -------------------------------------------------------------------------- */
+
+.figure-modal {
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 1000;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 32px;
+
+    background-color:
+        rgba(0, 0, 0, 0.78);
+}
+
+
+.figure-modal.open {
+    display: flex;
+}
+
+
+.figure-modal-content {
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    height: 100%;
+}
+
+
+.figure-modal-content img {
+    display: block;
+
+    max-width: 95%;
+    max-height: 92vh;
+
+    object-fit: contain;
+
+    background-color: white;
+
+    border-radius: var(--border-radius);
+}
+
+
+.figure-modal-close {
+    position: absolute;
+
+    top: 0;
+    right: 0;
+
+    width: 42px;
+    height: 42px;
+
+    padding: 0;
+
+    background-color: white;
+
+    border: none;
+
+    border-radius: 50%;
+
+    color: var(--color-primary);
+
+    font-size: 1.8rem;
+    line-height: 1;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 2px 8px
+        rgba(0, 0, 0, 0.25);
+
+    z-index: 2;
+}
+
+
+.figure-modal-close:hover {
+    background-color:
+        var(--color-primary-light);
+}
+
+
+/* --------------------------------------------------------------------------
+   Printing / PDF
+   -------------------------------------------------------------------------- */
+
+@media print {
+
+    body {
+        background: white;
+    }
+
+    .report-container {
+        width: 100%;
+
+        margin: 0;
+
+        box-shadow: none;
+    }
+
+    .report-section {
+        break-inside: avoid;
+    }
+
+    .figure-container {
+        break-inside: avoid;
+    }
+
+    .table-container {
+        break-inside: avoid;
+    }
+}
