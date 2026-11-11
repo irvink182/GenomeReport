@@ -4,8 +4,24 @@ HTML report generation.
 
 from pathlib import Path
 from html import escape
+from .config import Columns
 
 import pandas as pd
+
+ENGLISH_MONTHS = (
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+)
 
 class HTMLReport:
     """
@@ -18,6 +34,47 @@ class HTMLReport:
     ):
 
         self.report = report
+
+    def format_date_english(
+        self,
+        date,
+        include_time=False,
+    ):
+        """
+        Format dates using English month names
+        independently of the system locale.
+        """
+
+        month = ENGLISH_MONTHS[
+            date.month - 1
+        ]
+
+        formatted = (
+            f"{date.day:02d} "
+            f"{month} "
+            f"{date.year}"
+        )
+
+        if include_time:
+            formatted += (
+                f", {date:%H:%M %Z}"
+            )
+
+        return formatted
+
+    def format_month_year_english(
+        self,
+        date,
+    ):
+        """
+        Format month and year using English
+        month names independently of the system locale.
+        """
+
+        return (
+            f"{ENGLISH_MONTHS[date.month - 1]} "
+            f"{date.year}"
+        )
 
     def build(self):
         """
@@ -96,10 +153,8 @@ class HTMLReport:
         Render report metadata.
         """
 
-        generated = (
-            self.report.generated_at.strftime(
-                "%d %B %Y"
-            )
+        generated = self.format_date_english(
+            self.report.generated_at
         )
         
         return f"""
@@ -226,9 +281,8 @@ class HTMLReport:
             index=False,
             name=None,
         ):
-
             cells = "".join(
-                f"<td>{escape(str(value))}</td>"
+                f"<td>{format_value(value)}</td>"
                 for value in row
             )
 
@@ -325,6 +379,41 @@ class HTMLReport:
         return (
             "transmission_cluster_summary"
             in self.report.tables
+        )
+
+    def connectivity_group_label(
+        self,
+        plural=False,
+    ):
+        """
+        Return the display label used for genomic
+        connectivity grouping.
+        """
+
+        group_variable = getattr(
+            self.report,
+            "connectivity_group_variable",
+            None,
+        )
+
+        if group_variable == Columns.COMMUNITY:
+            return (
+                "Communities"
+                if plural
+                else "Community"
+            )
+
+        if group_variable == Columns.INSTITUTION:
+            return (
+                "Institutions"
+                if plural
+                else "Institution"
+            )
+
+        return (
+            "Groups"
+            if plural
+            else "Group"
         )
 
     def build_content(
@@ -1480,6 +1569,213 @@ class HTMLReport:
             sentences
         )
 
+
+    def genomic_connectivity_text(
+        self,
+    ):
+        """
+        Generate descriptive text for genomic connectivity.
+        """
+
+        table = self.report.tables[
+            "cluster_connectivity_summary"
+        ].copy()
+
+        group_label = self.connectivity_group_label()
+
+        group_label_plural = (
+            self.connectivity_group_label(
+                plural=True
+            )
+        )
+
+        paragraphs = [
+            (
+                f"Genomic connectivity was evaluated using "
+                f"{group_label} as the grouping variable. "
+                f"A multi-group cluster is defined as a genomic cluster "
+                f"containing sequences from at least two different "
+                f"{group_label_plural} groups, indicating genomic connectivity "
+                f"between groups. A single-group cluster contains "
+                f"sequences from only one {group_label} group."
+            )
+        ]
+
+        for threshold in (0, 5):
+
+            threshold_table = table[
+                table["Threshold"].eq(
+                    threshold
+                )
+            ].copy()
+
+
+            if threshold_table.empty:
+                continue
+
+            for subtype in ("A", "B"):
+
+                subtype_table = threshold_table[
+                    threshold_table[
+                        Columns.SUBTYPE
+                    ].eq(subtype)
+                ].copy()
+
+                if subtype_table.empty:
+                    continue
+
+                multi_group = subtype_table[
+                    subtype_table["Connectivity"].eq(
+                        "MULTI_GROUP"
+                    )
+                ].copy()
+
+                single_group = subtype_table[
+                    subtype_table["Connectivity"].eq(
+                        "SINGLE_GROUP"
+                    )
+                ].copy()
+
+                n_multi = len(
+                    multi_group
+                )
+                n_single = len(
+                    single_group
+                )
+
+                sentence = (
+                    f"At the {threshold}-SNP threshold, RSV-{subtype} "
+                    f"had {n_multi:,} multi-group genomic clusters and "
+                    f"{n_single:,} single-group genomic clusters."
+                )
+
+                if not multi_group.empty:
+
+                    largest = multi_group.loc[
+                        multi_group[
+                            "n_sequences"
+                        ].idxmax()
+                    ]
+
+                    broadest = multi_group.loc[
+                        multi_group[
+                            "n_groups"
+                        ].idxmax()
+                    ]
+
+                    sentence += (
+                        f" The largest RSV-{subtype} multi-group cluster "
+                        f"was {largest['Cluster']}, comprising "
+                        f"{int(largest['n_sequences']):,} sequences "
+                        f"from {int(largest['n_groups']):,} "
+                        f"{group_label_plural}."
+                    )
+
+                    sentence += (
+                        f" The broadest RSV-{subtype} multi-group cluster "
+                        f"was {broadest['Cluster']}, including sequences "
+                        f"from {int(broadest['n_groups']):,} "
+                        f"{group_label_plural} "
+                        f"(n = {int(broadest['n_sequences']):,} sequences)."
+                    )
+
+                paragraphs.append(
+                    sentence
+                )
+
+        return " ".join(
+            paragraphs
+        )
+
+
+    def genomic_cluster_composition_text(
+        self,
+    ):
+        """
+        Generate descriptive text for genomic cluster composition.
+        """
+
+        group_label = self.connectivity_group_label()
+        
+
+        return (
+            f"Composition of multi-group genomic clusters according "
+            f"to {group_label}. Clusters are ordered by decreasing "
+            f"number of sequences. An asterisk (*) indicates clusters "
+            f"detected in two or more epidemiological seasons."
+        )
+
+
+    def genomic_cluster_timeline_text(
+        self,
+    ):
+        """
+        Generate descriptive text for genomic cluster timelines.
+        """
+
+        group_label = (
+            self.connectivity_group_label()
+        )
+
+        group_label_plural = self.connectivity_group_label(
+            plural=True
+        )
+
+        return (
+            f"Temporal distribution of sequences belonging to "
+            f"multi-group genomic clusters. Colors indicate the "
+            f"{group_label} associated with each sequence. "
+            f"Shaded areas indicate epidemiological seasons. "
+            f"Cluster lineage is indicated next to the cluster "
+            f"identifier, and an asterisk (*) indicates clusters "
+            f"detected in two or more epidemiological seasons."
+        )
+
+    def genomic_connectivity_caption(
+        self,
+        plot_type,
+        threshold,
+        subtype=None,
+    ):
+        """
+        Generate captions for genomic connectivity figures.
+        """
+
+        group_label = self.connectivity_group_label()
+
+        group_label_plural = (
+            self.connectivity_group_label(
+                plural=True
+            )
+        )
+
+        if plot_type == "spread":
+            return (
+                f"Genomic connectivity of multi-group clusters "
+                f"across {group_label_plural} at the "
+                f"{threshold}-SNP threshold."
+            )
+
+        if plot_type == "composition":
+            return (
+                f"{group_label} composition of multi-group "
+                f"RSV-{subtype} genomic clusters at the "
+                f"{threshold}-SNP threshold. An asterisk (*) "
+                f"indicates clusters detected in two or more "
+                f"epidemiological seasons."
+            )
+
+        if plot_type == "timeline":
+            return (
+                f"Temporal distribution of multi-group RSV-{subtype} "
+                f"genomic clusters at the {threshold}-SNP threshold. "
+                f"Colors indicate {group_label}, shaded areas indicate "
+                f"epidemiological seasons, and an asterisk (*) indicates "
+                f"clusters detected in two or more epidemiological seasons."
+            )
+
+        return None
+
     def summary(
         self,
     ):
@@ -1540,15 +1836,15 @@ class HTMLReport:
             end_date
         )
         collection_period = (
-            f"{start_date:%m-%Y}"
+            f"{start_date:%m/%Y}"
             " - "
-            f"{end_date:%m-%Y}"
+            f"{end_date:%m/%Y}"
         )
 
         collection_period_text = (
-            f"{start_date:%B %Y}"
-            " to "
-            f"{end_date:%B %Y}"
+            f"{self.format_month_year_english(start_date)}"
+            " and "
+            f"{self.format_month_year_english(end_date)}"
         )
 
         return f"""
@@ -1563,7 +1859,7 @@ class HTMLReport:
                 f"{collection_period_text}. "
                 f"The dataset comprises {rsv_a} RSV-A and "
                 f"{rsv_b} RSV-B sequences from "
-                f"{communities} Communities in Spain."
+                f"{communities} Autonomous Communities and/or Cities in Spain."
             )
         )}
 
@@ -1733,7 +2029,7 @@ class HTMLReport:
 
             <p class="subsection-description">
                 Distribution of RSV sequences according to 
-                Samplig strategy.
+                Sampling strategy.
             </p>
 
             {self.report_text(
@@ -1745,7 +2041,7 @@ class HTMLReport:
                 section="geography",
                 caption=(
                     "Distribution of RSV-A & RSV-B sequences "
-                    "by samplig strategy."
+                    "by sampling strategy."
                 ),
                 max_width=800,
             )}
@@ -1895,7 +2191,7 @@ class HTMLReport:
 
         return f"""
     <section class="report-section">
-        <h2>Laborary contribution and Sequencing characteristics</h2>
+        <h2>Laboratory contribution and Sequencing characteristics</h2>
 
         <p class="section-description">
             Laboratory contribution and sequencing methods.
@@ -1906,7 +2202,7 @@ class HTMLReport:
 
             <p class="subsection-description">
                 Distribution of RSV sequences according to 
-                originating & subbmitting institutions.
+                originating and subbmitting institutions.
             </p>
 
             {self.report_text(
@@ -2634,6 +2930,191 @@ class HTMLReport:
 
         </div>
 
+        <div class="report-subsection">
+            <h3>Genomic connectivity</h3>
+
+            <p class="subsection-description">
+            {self.report_text(
+                self.genomic_connectivity_text()
+            )}
+            </p>
+
+            <h4>Cluster connectivity</h4>
+
+            <p class="subsection-description">
+                Relationship between genomic cluster size and the number of
+                represented groups. Only clusters detected in two or more 
+                groups are shown.
+
+            </p>
+
+            {self.figure_grid(
+                figures=[
+                    self.figure(
+                        figure_id="genomic_cluster_spread_0snp",
+                        section="genomic_connectivity",
+                        caption=self.genomic_connectivity_caption(
+                            plot_type="spread",
+                            threshold=0,
+                        ),
+                    ),
+                    self.figure(
+                        figure_id="genomic_cluster_spread_5snp",
+                        section="genomic_connectivity",
+                        caption=self.genomic_connectivity_caption(
+                            plot_type="spread",
+                            threshold=5,
+                        ),
+                    ),
+                ],
+                columns=2,
+            )}
+
+            {self.collapsible_table(
+                table_id="cluster_connectivity_summary",
+                label="View clustering connectivity summary",
+                interactive=True,
+            )}
+
+            <h4>Cluster composition</h4>
+
+            <p class="subsection-description">
+            {self.report_text(
+                self.genomic_cluster_composition_text()
+            )}
+            </p>
+
+            <h5>0-SNP threshold</h5>
+
+            {self.figure_grid(
+                figures=[
+                    self.figure(
+                        figure_id="genomic_cluster_composition_0snp_A",
+                        section="genomic_connectivity",
+                        caption=self.genomic_connectivity_caption(
+                            plot_type="composition",
+                            threshold=0,
+                            subtype="A",
+                        ),
+                    ),
+                    self.figure(
+                        figure_id="genomic_cluster_composition_0snp_B",
+                        section="genomic_connectivity",
+                        caption=self.genomic_connectivity_caption(
+                            plot_type="composition",
+                            threshold=0,
+                            subtype="B",
+                        ),
+                    ),
+                ],
+                columns=2,
+            )}
+
+            <h5>5-SNP threshold</h5>
+
+            {self.figure_grid(
+                figures=[
+                    self.figure(
+                        figure_id="genomic_cluster_composition_5snp_A",
+                        section="genomic_connectivity",
+                        caption=self.genomic_connectivity_caption(
+                            plot_type="composition",
+                            threshold=5,
+                            subtype="A",
+                        ),
+                    ),
+                    self.figure(
+                        figure_id="genomic_cluster_composition_5snp_B",
+                        section="genomic_connectivity",
+                        caption=self.genomic_connectivity_caption(
+                            plot_type="composition",
+                            threshold=5,
+                            subtype="B",
+                        ),
+                    ),
+                ],
+                columns=2,
+            )}
+
+            <h4>Temporal distribution of connected clusters</h4>
+
+            <p class="subsection-description">
+            {self.report_text(
+                self.genomic_cluster_timeline_text()
+            )}
+            </p>
+
+            <h5>0-SNP threshold</h5>
+
+            {self.figure_grid(
+                figures=[
+                    self.figure(
+                        figure_id="genomic_cluster_timeline_0snp_A",
+                        section="genomic_connectivity",
+                        caption=self.genomic_connectivity_caption(
+                            plot_type="timeline",
+                            threshold=0,
+                            subtype="A",
+                        ),
+                    ),
+                    self.figure(
+                        figure_id="genomic_cluster_timeline_0snp_B",
+                        section="genomic_connectivity",
+                        caption=self.genomic_connectivity_caption(
+                            plot_type="timeline",
+                            threshold=0,
+                            subtype="B",
+                        ),
+                    ),
+                ],
+                columns=2,
+            )}
+
+            <h5>5-SNP threshold</h5>
+
+            {self.figure_grid(
+                figures=[
+                    self.figure(
+                        figure_id="genomic_cluster_timeline_5snp_A",
+                        section="genomic_connectivity",
+                        caption=self.genomic_connectivity_caption(
+                            plot_type="timeline",
+                            threshold=5,
+                            subtype="A",
+                        ),
+                    ),
+                    self.figure(
+                        figure_id="genomic_cluster_timeline_5snp_B",
+                        section="genomic_connectivity",
+                        caption=self.genomic_connectivity_caption(
+                            plot_type="timeline",
+                            threshold=5,
+                            subtype="B",
+                        ),
+                    ),
+                ],
+                columns=2,
+            )}
+
+            <div class="data-links">
+
+                {self.collapsible_table(
+                    table_id="cluster_connectivity_samples",
+                    label="View cluster connectivity sample data",
+                    interactive=True,
+                )}
+
+
+                {self.collapsible_table(
+                    table_id="group_connectivity",
+                    label="View group connectivity data",
+                    interactive=True,
+                )}
+
+            </div>
+
+        </div>
+
     </section>
     """
         return html
@@ -2697,17 +3178,17 @@ class HTMLReport:
         """
         Render report generation and analysis information.
         """
-        generated = (
-            self.report.generated_at.strftime(
-                "%d %B %Y, %H:%M %Z"
-            )
+
+        generated = self.format_date_english(
+            self.report.generated_at,
+            include_time=True,
         )
         input_file = (
             self.report.input_file.name
             if self.report.input_file is not None
             else "NA"
         )
-        version = "1.0.0"
+        version = "1.1.0"
 
         return f"""
     <footer class="report-footer">

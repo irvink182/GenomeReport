@@ -304,6 +304,7 @@ class Columns:
     COLLECTION_DATE = "Collection date"
     YEAR = "Year"
     COLLECTION_YEAR = "gisaid_collection_year"
+    EPIDEMIOLOGICAL_SEASON = "epidemiological_season"
 
     # Geography
     LOCATION = "Location"

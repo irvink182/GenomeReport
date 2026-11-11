@@ -38,13 +38,10 @@ def aggregate_category(
         and "Year" in by
     ):
 
-        df["Year"] = (
-            pd.to_datetime(
-                df[Columns.COLLECTION_DATE],
-                errors="coerce",
-            )
-            .dt.year
-        )
+        df["Year"] = pd.to_numeric(
+            df[Columns.COLLECTION_YEAR],
+            errors="coerce",
+        ).astype("Int64")
 
     # Accept one or multiple grouping variables
     if isinstance(by, str):

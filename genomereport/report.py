@@ -105,6 +105,9 @@ from .plots import(
     community_lineage_heatmap,
     transmission_lineage_heatmap,
     protein_lineage_comparative_heatmap,
+    genomic_cluster_spread_scatter,
+    genomic_cluster_composition_barplot,
+    genomic_cluster_timeline,
 )
 
 from .virus_dynamics import (
@@ -136,6 +139,13 @@ from .clusters import(
     prepare_cluster_plot_data,
     cluster_by_lineage_year,
     )
+
+from .genomic_connectivity import (
+    cluster_connectivity_summary,
+    cluster_connectivity_samples,
+    group_connectivity,
+    select_connectivity_group,
+)
 
 class DatasetReport:
 
@@ -598,6 +608,39 @@ class DatasetReport:
                 summarize_cluster_table(community)
             )
 
+            #Genomic connectivity tables
+            self.connectivity_group_variable = (
+                select_connectivity_group(
+                    self.dataset
+                )
+            )
+
+            group_variable = (
+                self.connectivity_group_variable
+            )
+
+            if group_variable is not None:
+                self.tables[
+                    "cluster_connectivity_summary"
+                ] = cluster_connectivity_summary(
+                    self.dataset,
+                    group_variable=group_variable,
+                )
+
+                self.tables[
+                    "cluster_connectivity_samples"
+                ] = cluster_connectivity_samples(
+                    self.dataset,
+                    group_variable=group_variable,
+                )
+
+                self.tables[
+                    "group_connectivity"
+                ] = group_connectivity(
+                    self.dataset,
+                    group_variable=group_variable,
+                )
+
 
         ###########################################################################
         # Figures
@@ -1009,6 +1052,44 @@ class DatasetReport:
                         subtype=subtype,
                         threshold=threshold,
                     )
+
+            #Genomic connectivity plots
+            if group_variable is not None:
+                for threshold in TRANSMISSION_CLUSTER_THRESHOLDS:
+                    
+                    #Cluster spread
+                    self.figures[
+                        f"genomic_cluster_spread_{threshold}snp"
+                    ] = genomic_cluster_spread_scatter(
+                        self.tables["cluster_connectivity_summary"],
+                        threshold=threshold,
+                        group_variable=group_variable,
+                    )
+
+                    #Cluster composition
+                    for subtype in cluster_subtypes:
+
+                        self.figures[
+                            f"genomic_cluster_composition_{threshold}snp_{subtype}"
+                        ] = genomic_cluster_composition_barplot(
+                            self.tables["cluster_connectivity_samples"],
+                            subtype=subtype,
+                            threshold=threshold,
+                            group_variable=group_variable,
+                        )
+
+                        #Cluster timeline
+                        self.figures[
+                            f"genomic_cluster_timeline_{threshold}snp_{subtype}"
+                        ] = genomic_cluster_timeline(
+                            self.tables["cluster_connectivity_samples"],
+                            subtype=subtype,
+                            threshold=threshold,
+                            group_variable=group_variable,
+                        )
+
+
+
 
         ###########################################################################
         # Console

@@ -118,14 +118,28 @@ def sequence_length_summary(df):
 
 def collection_period(df):
     """
-    Return collection date range.
+    Return collection date range using only
+    complete collection dates (YYYY-MM-DD).
     """
 
     if Columns.COLLECTION_DATE not in df.columns:
         return None
 
+    collection_date = (
+        df[Columns.COLLECTION_DATE]
+        .astype("string")
+        .str.strip()
+    )
+
+    # Keep only complete dates (YYYY-MM-DD)
+    complete_dates = collection_date.str.fullmatch(
+        r"\d{4}-\d{2}-\d{2}",
+        na=False,
+    )
+
     dates = pd.to_datetime(
-        df[Columns.COLLECTION_DATE],
+        collection_date[complete_dates],
+        format="%Y-%m-%d",
         errors="coerce",
     ).dropna()
 
@@ -606,26 +620,29 @@ def temporal_year(dataset):
 
     df = dataset.df.copy()
 
-    df["Year"] = (
-        pd.to_datetime(
-            df[Columns.COLLECTION_DATE],
-            errors="coerce",
-        )
-        .dt.year
+    # Use normalized collection year
+    df["Year"] = pd.to_numeric(
+        df[Columns.COLLECTION_YEAR],
+        errors="coerce",
     )
 
-    # Remove invalid dates
-    df = df.dropna(subset=["Year"])
+    # Remove records without year information
+    df = df.dropna(
+        subset=["Year"]
+    )
 
     # Convert to integer
-    df["Year"] = df["Year"].astype(int)
+    df["Year"] = (
+        df["Year"]
+        .astype(int)
+    )
 
     # Count sequences
     table = count_by(
         df,
         "Year",
     )
-    
+
     return complete_years(table)
 
 #######################

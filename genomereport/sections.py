@@ -27,6 +27,20 @@ for threshold in TRANSMISSION_CLUSTER_THRESHOLDS:
 
     )
 
+connectivity_figures = []
+
+for threshold in TRANSMISSION_CLUSTER_THRESHOLDS:
+
+    connectivity_figures.extend(
+        [
+            f"genomic_cluster_spread_{threshold}snp",
+            f"genomic_cluster_composition_{threshold}snp_A",
+            f"genomic_cluster_composition_{threshold}snp_B",
+            f"genomic_cluster_timeline_{threshold}snp_A",
+            f"genomic_cluster_timeline_{threshold}snp_B",
+        ]
+    )
+
 REPORT_SECTIONS = {
 
     "overview": {
@@ -288,6 +302,21 @@ REPORT_SECTIONS = {
 
     },
 
+    "genomic_connectivity": {
+
+        "name": "Genomic connectivity",
+        
+        "table_ids": (
+            "cluster_connectivity_summary",
+            "cluster_connectivity_samples",
+            "group_connectivity",
+        ),
+
+        "figure_ids": tuple(
+            connectivity_figures
+        ),
+    },
+
 }
 
 SECTION_ORDER = (
@@ -299,4 +328,5 @@ SECTION_ORDER = (
     "virus",
     "mutations",
     "clusters",
+    "genomic_connectivity",
 )

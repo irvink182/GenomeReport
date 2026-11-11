@@ -3,12 +3,15 @@ Plots.
 """
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MaxNLocator
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
 from matplotlib.colors import LogNorm
+from matplotlib.lines import Line2D
 from shapely.affinity import translate
 from matplotlib.patches import Rectangle
 from shapely.ops import unary_union
@@ -302,6 +305,10 @@ def temporal_stacked_barplot(
 
     df = table.copy()
 
+    single_timepoint = (
+        df[x].nunique() == 1
+    )
+
     # Normalize to percentages
     if percentage:
 
@@ -384,11 +391,25 @@ def temporal_stacked_barplot(
             ]
         )
 
-    format_year_axis(
-        ax,
-        df[x],
-        every=1,
-    )
+    if single_timepoint:
+
+        year = int(df[x].iloc[0])
+
+        ax.set_xlim(
+            year - 1,
+            year + 1,
+        )
+
+        ax.set_xticks(
+            [year]
+        )
+
+    else:
+        format_year_axis(
+            ax,
+            df[x],
+            every=1,
+        )
 
     # Style
     if title is not None:
@@ -437,6 +458,7 @@ def categorical_stacked_barplot(
     x_margin=1.05,
     normalize=False,
     show_totals=True,
+    sort=True,
     title=None,
 ):
     """
@@ -458,10 +480,11 @@ def categorical_stacked_barplot(
         if column not in df.columns:
             df[column] = 0
 
-    df = df.sort_values(
-        "Total",
-        ascending=True,
-    )
+    if sort:
+        df = df.sort_values(
+            "Total",
+            ascending=True,
+        )
 
     fig_height = max(
         5,
@@ -2093,7 +2116,36 @@ def patient_age_groups_barplot(table):
     """
     Age distribution by age groups.
     """
-    
+
+    age_order = [
+        "Unknown",
+        "≥65 years",
+        "50–64 years",
+        "18–49 years",
+        "5–17 years",
+        "1–4 years",
+        "<1 year",
+    ]
+
+    # Remove age groups without sequences
+    table = table[
+        table["Total"] > 0
+    ].copy()
+
+    # Keep only age groups present in the dataset
+    age_order = [
+        age_group
+        for age_group in age_order
+        if age_group in table["Age group"].values
+    ]
+
+    table = (
+        table
+        .set_index("Age group")
+        .reindex(age_order)
+        .reset_index()
+    )
+
     return categorical_stacked_barplot(
         table,
         category="Age group",
@@ -2101,6 +2153,7 @@ def patient_age_groups_barplot(table):
         columns=["A", "B"],
         colors=[COLOR_A, COLOR_B],
         labels=["RSV-A", "RSV-B"],
+        sort=False,
         title="RSV distribution by Age"
     )
 
@@ -2745,3 +2798,1214 @@ def cluster_community_barplot(
         show_totals=True,
         title=f"Transmission clustering by Community (RSV-{subtype}, {threshold} SNP threshold)"
     )
+
+#############################
+# Genomic connectivity plots
+#############################
+def genomic_cluster_spread_scatter(
+    table,
+    threshold,
+    group_variable,
+):
+    """
+    Plot the size and between-group spread of genomic clusters.
+
+    Only clusters shared across multiple groups are displayed.
+    The grouping dimension is defined by ``group_variable``
+    (e.g. autonomous community or institution).
+    """
+
+    # Group label
+    group_labels = {
+        Columns.COMMUNITY: "communities",
+        Columns.INSTITUTION: "institutions",
+    }
+
+    group_label = group_labels.get(
+        group_variable,
+        str(group_variable)
+        .replace("_", " ")
+        .lower(),
+    )
+
+    # Filter multi-group clusters
+    df = table[
+        (table["Threshold"] == threshold)
+        &
+        (table["Connectivity"] == "MULTI_GROUP")
+    ].copy()
+
+    fig, ax = plt.subplots(
+        figsize=FIGSIZE,
+    )
+
+    # Empty result
+    if df.empty:
+
+        ax.text(
+            0.5,
+            0.5,
+            "No multi-group genomic clusters detected",
+            transform=ax.transAxes,
+            ha="center",
+            va="center",
+        )
+
+        style_labels(
+            ax,
+            xlabel="Number of sequences",
+            ylabel=f"Number of {group_label}",
+        )
+
+        style_axes(ax)
+
+        style_title(
+            ax,
+            (
+                f"Genomic cluster spread across {group_label} "
+                f"({threshold} SNP threshold)"
+            ),
+        )
+
+        style_layout(fig)
+
+        return fig
+
+    # Scatter plot
+    for subtype in ["A", "B"]:
+
+        subtype_df = df[
+            df[Columns.SUBTYPE] == subtype
+        ]
+
+        if subtype_df.empty:
+            continue
+
+        ax.scatter(
+            subtype_df["n_sequences"],
+            subtype_df["n_groups"],
+            color=SUBTYPE_COLORS[subtype],
+            label=f"RSV-{subtype}",
+            s=115,
+            alpha=0.80,
+            edgecolor="white",
+            linewidth=0.7,
+        )
+
+    # Axes
+    style_labels(
+        ax,
+        xlabel="Number of sequences",
+        ylabel=f"Number of {group_label}",
+    )
+
+    ax.xaxis.set_major_locator(
+        MaxNLocator(integer=True)
+    )
+
+    min_groups = int(
+        df["n_groups"].min()
+    )
+
+    max_groups = int(
+        df["n_groups"].max()
+    )
+
+    ax.set_yticks(
+        range(
+            min_groups,
+            max_groups + 1,
+        )
+    )
+
+    if min_groups == max_groups:
+
+        ax.set_ylim(
+            min_groups - 0.5,
+            max_groups + 0.5,
+        )
+
+    else:
+
+        ax.set_ylim(
+            min_groups - 0.2,
+            max_groups + 0.2,
+        )
+
+    style_axes(ax)
+
+    style_legend(
+        ax,
+        title="Subtype",
+    )
+
+    style_title(
+        ax,
+        (
+            f"Genomic cluster spread across {group_label} "
+            f"({threshold} SNP threshold)"
+        ),
+    )
+
+    style_layout(fig)
+
+    return fig
+
+def genomic_cluster_composition_barplot(
+    table,
+    subtype,
+    threshold,
+    group_variable,
+):
+    """
+    Plot the group composition of multi-group genomic clusters.
+
+    Clusters are ordered by decreasing number of sequences.
+    Within each cluster, groups are stacked from the largest
+    contribution at the bottom to the smallest at the top.
+
+    Clusters detected in two or more epidemiological seasons
+    are marked with an asterisk.
+    """
+
+    # Group label
+    group_labels = {
+        Columns.COMMUNITY: "Community",
+        Columns.INSTITUTION: "Institution",
+    }
+
+    group_label = group_labels.get(
+        group_variable,
+        str(group_variable)
+        .replace("_", " ")
+        .title(),
+    )
+
+    # Filter
+    df = table[
+        (table[Columns.SUBTYPE] == subtype)
+        &
+        (table["Threshold"] == threshold)
+        &
+        (table["Connectivity"] == "MULTI_GROUP")
+    ].copy()
+
+    fig, ax = plt.subplots(
+        figsize=FIGSIZE,
+    )
+
+    # Empty result
+    if df.empty:
+
+        ax.text(
+            0.5,
+            0.5,
+            "No multi-group genomic clusters detected",
+            transform=ax.transAxes,
+            ha="center",
+            va="center",
+        )
+
+        style_labels(
+            ax,
+            xlabel="Genomic cluster",
+            ylabel="Number of sequences",
+        )
+
+        style_axes(ax)
+
+        style_title(
+            ax,
+            (
+                f"RSV-{subtype} genomic cluster composition "
+                f"({threshold} SNP threshold)"
+            ),
+        )
+
+        style_layout(fig)
+
+        return fig
+
+    # Cluster summary
+    cluster_summary = (
+        df.groupby(
+            "Cluster",
+            as_index=False,
+        )
+        .agg(
+            n_sequences=("Accession ID", "size"),
+            n_groups=("Group", "nunique"),
+        )
+    )
+
+    # Number of epidemiological seasons represented
+    # in each genomic cluster
+    season_counts = (
+        df.assign(
+            epidemiological_season=(
+                df["epidemiological_season"]
+                .replace("", pd.NA)
+            )
+        )
+        .dropna(
+            subset=["epidemiological_season"]
+        )
+        .groupby(
+            "Cluster",
+            as_index=False,
+        )
+        .agg(
+            n_seasons=(
+                "epidemiological_season",
+                "nunique",
+            )
+        )
+    )
+
+    # Add season counts to cluster summary
+    cluster_summary = cluster_summary.merge(
+        season_counts,
+        on="Cluster",
+        how="left",
+    )
+
+    cluster_summary["n_seasons"] = (
+        cluster_summary["n_seasons"]
+        .fillna(0)
+        .astype(int)
+    )
+
+    # Order clusters by decreasing size
+    cluster_summary = (
+        cluster_summary
+        .sort_values(
+            ["n_sequences", "Cluster"],
+            ascending=[False, True],
+        )
+        .reset_index(drop=True)
+    )
+
+    cluster_order = (
+        cluster_summary["Cluster"]
+        .tolist()
+    )
+
+    # Group counts
+    counts = (
+        df.groupby(
+            [
+                "Cluster",
+                "Group",
+            ]
+        )
+        .size()
+        .reset_index(name="n_sequences")
+    )
+
+    groups = sorted(
+        counts["Group"]
+        .dropna()
+        .unique()
+    )
+
+    # Colours
+    cmap = plt.get_cmap("tab20")
+
+    group_colors = {
+        group: cmap(i % 20)
+        for i, group in enumerate(groups)
+    }
+
+    # Stacked bars
+    x = np.arange(
+        len(cluster_order)
+    )
+
+    for position, cluster in enumerate(
+        cluster_order
+    ):
+
+        cluster_counts = (
+            counts[
+                counts["Cluster"] == cluster
+            ]
+            .sort_values(
+                ["n_sequences", "Group"],
+                ascending=[False, True],
+            )
+        )
+
+        bottom = 0
+
+        for _, row in cluster_counts.iterrows():
+
+            ax.bar(
+                position,
+                row["n_sequences"],
+                bottom=bottom,
+                color=group_colors[row["Group"]],
+                width=BAR_WIDTH,
+            )
+
+            bottom += row["n_sequences"]
+
+    # Multi-season annotations
+    ymax = (
+        cluster_summary["n_sequences"]
+        .max()
+    )
+
+    label_offset = max(
+        0.5,
+        ymax * 0.02,
+    )
+
+    for position, (_, row) in enumerate(
+        cluster_summary.iterrows()
+    ):
+
+        if row["n_seasons"] >= 2:
+
+            ax.text(
+                position,
+                row["n_sequences"] + label_offset,
+                "*",
+                ha="center",
+                va="bottom",
+                fontsize=TICK_SIZE,
+                fontweight="bold",
+            )
+
+    # Axes
+    n_clusters = len(
+        cluster_order
+    )
+
+    if n_clusters > 20:
+        x_tick_size = 6
+
+    elif n_clusters > 10:
+        x_tick_size = 7
+
+    else:
+        x_tick_size = 8
+
+    ax.set_xticks(x)
+
+    ax.set_xticklabels(
+        cluster_order,
+        rotation=50,
+        ha="right",
+        fontsize=x_tick_size,
+    )
+
+    ax.yaxis.set_major_locator(
+        MaxNLocator(integer=True)
+    )
+
+    ax.set_ylim(
+        0,
+        ymax * 1.12,
+    )
+
+    style_labels(
+        ax,
+        xlabel="Genomic cluster",
+        ylabel="Number of sequences",
+    )
+
+    style_axes(ax)
+
+    # Legend
+    handles = [
+        Rectangle(
+            (0, 0),
+            1,
+            1,
+            color=group_colors[group],
+        )
+        for group in groups
+    ]
+
+    ax.legend(
+        handles,
+        groups,
+        title=group_label,
+        bbox_to_anchor=(1.02, 1),
+        loc="upper left",
+    )
+
+    # Title
+    style_title(
+        ax,
+        (
+            f"RSV-{subtype} genomic cluster distribution "
+            f"({threshold} SNP threshold)"
+        ),
+    )
+
+    # Multi-season footnote
+    has_multiseason = (
+        cluster_summary["n_seasons"] >= 2
+    ).any()
+
+    if has_multiseason:
+
+        fig.text(
+            0.12,
+            0.03,
+            "* Cluster detected in ≥2 epidemiological seasons",
+            ha="left",
+            va="bottom",
+            fontsize=8,
+        )
+
+    # Layout
+    fig.subplots_adjust(
+        bottom=0.30,
+        right=0.80,
+    )
+
+    return fig
+
+def genomic_cluster_timeline(
+    table,
+    subtype,
+    threshold,
+    group_variable,
+    max_clusters=20,
+):
+    """
+    Plot the temporal distribution of multi-group genomic clusters.
+
+    For the 0 SNP threshold, all multi-group clusters are shown.
+
+    For thresholds > 0, a maximum number of clusters is shown.
+    Multi-season clusters are prioritised, followed by the remaining
+    clusters ranked by number of sequences and temporal duration.
+
+    Each point represents one sequence and is coloured according to
+    the selected grouping variable.
+
+    Clusters detected in two or more epidemiological seasons are
+    marked with an asterisk.
+
+    Epidemiological seasons are represented as alternating background
+    bands.
+    """
+
+    # Group label
+    group_labels = {
+        Columns.COMMUNITY: "Community",
+        Columns.INSTITUTION: "Institution",
+    }
+
+    group_label = group_labels.get(
+        group_variable,
+        str(group_variable)
+        .replace("_", " ")
+        .title(),
+    )
+
+    # Filter subtype, threshold and connectivity
+    df = table[
+        (table[Columns.SUBTYPE] == subtype)
+        &
+        (table["Threshold"] == threshold)
+        &
+        (table["Connectivity"] == "MULTI_GROUP")
+    ].copy()
+
+    fig, ax = plt.subplots(
+        figsize=FIGSIZE,
+    )
+
+    # Empty result
+    if df.empty:
+
+        ax.text(
+            0.5,
+            0.5,
+            "No multi-group genomic clusters detected",
+            transform=ax.transAxes,
+            ha="center",
+            va="center",
+        )
+
+        style_labels(
+            ax,
+            xlabel="Collection date",
+            ylabel="Genomic cluster",
+        )
+
+        style_axes(ax)
+
+        style_title(
+            ax,
+            (
+                f"RSV-{subtype} genomic cluster timeline "
+                f"({threshold} SNP threshold)"
+            ),
+        )
+
+        style_layout(fig)
+
+        return fig
+
+    # Collection date
+    df[Columns.COLLECTION_DATE] = pd.to_datetime(
+        df[Columns.COLLECTION_DATE],
+        errors="coerce",
+    )
+
+    df = df.dropna(
+        subset=[
+            Columns.COLLECTION_DATE,
+            "Cluster",
+        ]
+    )
+
+    if df.empty:
+
+        ax.text(
+            0.5,
+            0.5,
+            "No valid collection dates available",
+            transform=ax.transAxes,
+            ha="center",
+            va="center",
+        )
+
+        style_labels(
+            ax,
+            xlabel="Collection date",
+            ylabel="Genomic cluster",
+        )
+
+        style_axes(ax)
+
+        style_title(
+            ax,
+            (
+                f"RSV-{subtype} genomic cluster timeline "
+                f"({threshold} SNP threshold)"
+            ),
+        )
+
+        style_layout(fig)
+
+        return fig
+
+    # Cluster summary
+    cluster_summary = (
+        df.groupby("Cluster")
+        .agg(
+            n_sequences=(
+                Columns.ACCESSION,
+                "size",
+            ),
+            first_date=(
+                Columns.COLLECTION_DATE,
+                "min",
+            ),
+            last_date=(
+                Columns.COLLECTION_DATE,
+                "max",
+            ),
+            n_seasons=(
+                Columns.EPIDEMIOLOGICAL_SEASON,
+                lambda x: (
+                    x.replace("", pd.NA)
+                    .dropna()
+                    .nunique()
+                ),
+            ),
+            lineages=(
+                "Lineage",
+                lambda x: sorted(
+                    x.dropna().astype(str).unique()
+                ),
+            ),
+        )
+        .reset_index()
+    )
+
+    cluster_summary["duration_days"] = (
+        cluster_summary["last_date"]
+        - cluster_summary["first_date"]
+    ).dt.days
+
+    # Cluster selection
+    filtering_applied = False
+
+    if (
+        threshold != 0
+        and len(cluster_summary) > max_clusters
+    ):
+
+        filtering_applied = True
+
+        # Multi-season clusters have priority.
+        multiseason = (
+            cluster_summary[
+                cluster_summary["n_seasons"] >= 2
+            ]
+            .sort_values(
+                [
+                    "n_seasons",
+                    "n_sequences",
+                    "duration_days",
+                    "Cluster",
+                ],
+                ascending=[
+                    False,
+                    False,
+                    False,
+                    True,
+                ],
+            )
+        )
+
+        # Remaining clusters are ranked by size and duration.
+        single_season = (
+            cluster_summary[
+                cluster_summary["n_seasons"] < 2
+            ]
+            .sort_values(
+                [
+                    "n_sequences",
+                    "duration_days",
+                    "Cluster",
+                ],
+                ascending=[
+                    False,
+                    False,
+                    True,
+                ],
+            )
+        )
+
+        if len(multiseason) >= max_clusters:
+
+            selected_summary = (
+                multiseason
+                .head(max_clusters)
+                .copy()
+            )
+
+        else:
+
+            remaining = (
+                max_clusters
+                - len(multiseason)
+            )
+
+            selected_summary = pd.concat(
+                [
+                    multiseason,
+                    single_season.head(
+                        remaining
+                    ),
+                ],
+                ignore_index=True,
+            )
+
+        selected_clusters = (
+            selected_summary["Cluster"]
+            .tolist()
+        )
+
+        df = df[
+            df["Cluster"].isin(
+                selected_clusters
+            )
+        ].copy()
+
+        cluster_summary = (
+            cluster_summary[
+                cluster_summary["Cluster"].isin(
+                    selected_clusters
+                )
+            ]
+            .copy()
+        )
+
+    # Order clusters chronologically
+    cluster_summary = (
+        cluster_summary
+        .sort_values(
+            [
+                "first_date",
+                "last_date",
+                "Cluster",
+            ],
+            ascending=[
+                True,
+                True,
+                True,
+            ],
+        )
+        .reset_index(drop=True)
+    )
+
+    cluster_order = (
+        cluster_summary["Cluster"]
+        .tolist()
+    )
+
+    # Plot temporal limits
+    min_date = (
+        df[Columns.COLLECTION_DATE]
+        .min()
+    )
+
+    max_date = (
+        df[Columns.COLLECTION_DATE]
+        .max()
+    )
+
+    # Small horizontal padding.
+    date_range = (
+        max_date - min_date
+    )
+
+    padding_days = max(
+        14,
+        int(date_range.days * 0.03),
+    )
+
+    plot_min_date = (
+        min_date
+        - pd.Timedelta(
+            days=padding_days
+        )
+    )
+
+    plot_max_date = (
+        max_date
+        + pd.Timedelta(
+            days=padding_days
+        )
+    )
+
+    # Epidemiological season background
+    seasons = (
+        df[
+            Columns.EPIDEMIOLOGICAL_SEASON
+        ]
+        .replace("", pd.NA)
+        .dropna()
+        .astype(str)
+        .unique()
+    )
+
+    season_ranges = []
+
+    for season in seasons:
+
+        try:
+
+            start_year = int(
+                season.split("-")[0]
+            )
+
+        except (
+            ValueError,
+            IndexError,
+        ):
+            continue
+
+        # Epidemiological season:
+        # week 40 -> week 39 of the following year.
+        #
+        # For visualisation, October 1 is used as the
+        # approximate seasonal boundary.
+
+        start_date = pd.Timestamp(
+            year=start_year,
+            month=10,
+            day=1,
+        )
+
+        end_date = pd.Timestamp(
+            year=start_year + 1,
+            month=10,
+            day=1,
+        )
+
+        season_ranges.append(
+            (
+                season,
+                start_date,
+                end_date,
+            )
+        )
+
+    season_ranges = sorted(
+        season_ranges,
+        key=lambda x: x[1],
+    )
+
+    for i, (
+        season,
+        start_date,
+        end_date,
+    ) in enumerate(season_ranges):
+
+        # Skip seasons outside the visible plot.
+        if (
+            end_date < plot_min_date
+            or start_date > plot_max_date
+        ):
+            continue
+
+        # Alternating background.
+        if i % 2 == 0:
+            season_color = "0.97"
+        else:
+            season_color = "1.00"
+
+        ax.axvspan(
+            start_date,
+            end_date,
+            color=season_color,
+            zorder=0,
+        )
+
+        # Season boundary.
+        ax.axvline(
+            start_date,
+            color="0.75",
+            linestyle="--",
+            linewidth=0.8,
+            zorder=1,
+        )
+
+        # Visible part of the season.
+        visible_start = max(
+            start_date,
+            plot_min_date,
+        )
+
+        visible_end = min(
+            end_date,
+            plot_max_date,
+        )
+
+        if visible_start >= visible_end:
+            continue
+
+        # Put the label inside the plotting area rather than
+        # above the axes, avoiding overlap with the title.
+        visible_duration = (
+            visible_end
+            - visible_start
+        )
+
+        label_date = (
+            visible_start
+            + visible_duration * 0.03
+        )
+
+        n_season_samples = (
+            df.loc[
+                df[Columns.EPIDEMIOLOGICAL_SEASON] == season
+            ]
+            ["Accession ID"]
+            .nunique()
+        )
+
+        if n_season_samples >= 3:
+            ax.text(
+                label_date,
+                1.015,
+                season,
+                transform=ax.get_xaxis_transform(),
+                ha="left",
+                va="top",
+                fontsize=8,
+                color="0.35",
+                clip_on=False,
+                zorder=2,
+            )
+
+
+    # Group colors
+    groups = sorted(
+        df["Group"]
+        .dropna()
+        .astype(str)
+        .unique()
+    )
+
+    cmap = plt.get_cmap(
+        "tab20"
+    )
+
+    group_colors = {
+        group: cmap(i % 20)
+        for i, group in enumerate(groups)
+    }
+
+    # Y positions
+    y_positions = {
+        cluster: position
+        for position, cluster in enumerate(
+            cluster_order
+        )
+    }
+
+    # Cluster duration lines
+    for _, row in cluster_summary.iterrows():
+
+        cluster = row["Cluster"]
+
+        y = y_positions[
+            cluster
+        ]
+
+        ax.plot(
+            [
+                row["first_date"],
+                row["last_date"],
+            ],
+            [
+                y,
+                y,
+            ],
+            color="0.70",
+            linewidth=1.5,
+            zorder=2,
+        )
+
+    # Sample points
+
+    # Smaller points when the 5-SNP plot has been filtered
+    # to improve visibility of overlapping groups.
+    if filtering_applied:
+        point_size = 28
+    else:
+        point_size = 40
+
+    # Vertical jitter for coincident samples
+
+    # Start from the central Y position of each cluster.
+    df["_plot_y"] = df["Cluster"].map(
+        y_positions
+    ).astype(float)
+
+    # Samples collected on exactly the same date within the
+    # same cluster would otherwise be completely superimposed.
+    # Apply a small symmetric vertical offset while preserving
+    # the exact collection date on the X axis.
+    jitter_spacing = 0.10
+
+    for (
+        cluster,
+        collection_date,
+    ), idx in df.groupby(
+        [
+            "Cluster",
+            Columns.COLLECTION_DATE,
+        ]
+    ).groups.items():
+
+        idx = list(idx)
+
+        n_samples = len(idx)
+
+        if n_samples <= 1:
+            continue
+
+        offsets = (
+            np.arange(n_samples)
+            - (n_samples - 1) / 2
+        ) * jitter_spacing
+
+        df.loc[
+            idx,
+            "_plot_y",
+        ] += offsets
+
+    # Plot samples
+    for group in groups:
+
+        group_df = df[
+            df["Group"].astype(str)
+            == group
+        ]
+
+        ax.scatter(
+            group_df[
+                Columns.COLLECTION_DATE
+            ],
+            group_df["_plot_y"],
+            s=point_size,
+            color=group_colors[group],
+            label=group,
+            zorder=3,
+        )
+
+    # Cluster labels
+    cluster_labels = []
+
+    for _, row in cluster_summary.iterrows():
+
+        label = row[
+            "Cluster"
+        ]
+
+        if row["n_seasons"] >= 2:
+            label = f"{label} *"
+
+        lineages = row[
+            "lineages"
+        ]
+
+        if len(lineages) == 1:
+            label = (
+                f"{label} "
+                f"({lineages[0]})"
+            )
+        elif len(lineages) > 1:
+            label = (
+                f"{label} "
+                "(multiple lineages)")
+
+        cluster_labels.append(
+            label
+        )
+
+    ax.set_yticks(
+        range(
+            len(cluster_order)
+        )
+    )
+
+    ax.set_yticklabels(
+        cluster_labels,
+        fontsize=8,
+    )
+
+    # First cluster at the top.
+    ax.invert_yaxis()
+
+    # X axis
+    ax.set_xlim(
+        plot_min_date,
+        plot_max_date,
+    )
+
+    date_range_days = (
+        plot_max_date - plot_min_date
+    ).days
+
+    if date_range_days <= 120:
+
+        # Short timelines: monthly ticks
+        ax.xaxis.set_major_locator(
+            mdates.MonthLocator()
+        )
+
+        ax.xaxis.set_major_formatter(
+            mdates.DateFormatter("%b\n%Y")
+        )
+
+    elif date_range_days <= 730:
+
+        # Medium timelines: every 2 months
+        ax.xaxis.set_major_locator(
+            mdates.MonthLocator(
+                interval=2
+            )
+        )
+
+        ax.xaxis.set_major_formatter(
+            mdates.DateFormatter("%b\n%Y")
+        )
+
+    else:
+
+        # Long timelines: every 6 months
+        ax.xaxis.set_major_locator(
+            mdates.MonthLocator(
+                interval=6
+            )
+        )
+
+        ax.xaxis.set_major_formatter(
+            mdates.DateFormatter("%b\n%Y")
+        )
+
+    # Axes
+    style_labels(
+        ax,
+        xlabel="Collection date",
+        ylabel="Genomic cluster",
+    )
+
+    style_axes(ax)
+
+    # Legend
+    handles = [
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            linestyle="",
+            markersize=6,
+            markerfacecolor=group_colors[group],
+            markeredgecolor=group_colors[group],
+            label=group,
+        )
+        for group in groups
+    ]
+
+    ax.legend(
+        handles=handles,
+        title=group_label,
+        bbox_to_anchor=(
+            1.02,
+            1,
+        ),
+        loc="upper left",
+    )
+
+    # Title
+    style_title(
+        ax,
+        (
+            f"RSV-{subtype} genomic cluster timeline "
+            f"({threshold} SNP threshold)"
+        ),
+    )
+
+    # Multi-season footnote
+    has_multiseason = (
+        cluster_summary[
+            "n_seasons"
+        ] >= 2
+    ).any()
+
+    if has_multiseason:
+
+        fig.text(
+            0.12,
+            0.03,
+            (
+                "* Cluster detected in ≥2 "
+                "epidemiological seasons"
+            ),
+            ha="left",
+            va="bottom",
+            fontsize=8,
+        )
+
+    # Layout
+    fig.subplots_adjust(
+        bottom=0.18,
+        right=0.80,
+        top=0.85,
+    )
+
+    return fig
